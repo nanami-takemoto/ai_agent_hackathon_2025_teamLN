@@ -1,0 +1,9 @@
+flask==2.3.3
+google-cloud-storage==2.10.0
+google-cloud-aiplatform==1.38.1
+pillow==11.3.0
+ 
+mediapipe==0.10.14
+opencv-python-headless==4.10.0.84
+
+

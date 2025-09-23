@@ -1,1 +1,43 @@
 *.tfvars
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+.python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Docker artifacts
+*.tar
+
+# Terraform
+**/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/tfplan
+
+# Secrets (do not commit service account keys or certs)
+credentials.json
+service-account.json
+*.pem
+*.p12

@@ -29,6 +29,13 @@ variable "bucket_name" {
   type        = string
 }
 
+# Artifact Registry設定
+variable "artifact_registry_repository_id" {
+  description = "Artifact RegistryリポジトリID"
+  type        = string
+  default     = "image-processor-repo"
+}
+
 # リソース設定
 variable "cpu_limit" {
   description = "Cloud RunサービスのCPU制限"
@@ -48,8 +55,17 @@ variable "max_instances" {
   default     = 5
 }
 
-# サービスアカウント設定
-variable "service_account_email" {
-  description = "Cloud Runサービスで使用するサービスアカウントのメールアドレス"
+
+
+# Vertex AI Vision（任意設定）
+variable "vision_endpoint_id" {
+  description = "Vertex AI Vision推論エンドポイントID（未指定なら検出スキップ）"
   type        = string
+  default     = ""
+}
+
+variable "vision_region" {
+  description = "Vertex AI Visionのリージョン（未指定時はregionを使用）"
+  type        = string
+  default     = ""
 }

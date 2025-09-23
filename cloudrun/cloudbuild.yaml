@@ -1,0 +1,25 @@
+# Cloud Build configuration to build Docker image using a Dockerfile in a subdirectory
+# Build context: cloudrun/
+# Dockerfile:   cloudrun/docker/Dockerfile
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: asia-northeast1
+  _REPO: image-processor-repo
+  _IMAGE: image-processor
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build image
+    args:
+      - build
+      - '-f'
+      - docker/Dockerfile
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest'
+      - '.'
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest'

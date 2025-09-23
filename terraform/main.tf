@@ -39,6 +39,14 @@ resource "google_project_service" "storage_api" {
   disable_on_destroy        = false
 }
 
+resource "google_project_service" "artifact_registry_api" {
+  project = var.project_id
+  service = "artifactregistry.googleapis.com"
+
+  disable_dependent_services = false
+  disable_on_destroy        = false
+}
+
 # Cloud Storageバケット
 resource "google_storage_bucket" "main" {
   name          = var.bucket_name
@@ -63,6 +71,16 @@ resource "google_storage_bucket" "main" {
   depends_on = [google_project_service.storage_api]
 }
 
+# Artifact Registryリポジトリ
+resource "google_artifact_registry_repository" "main" {
+  location      = var.region
+  repository_id = var.artifact_registry_repository_id
+  description   = "Repository for ${var.service_name} container images"
+  format        = "DOCKER"
+
+  depends_on = [google_project_service.artifact_registry_api]
+}
+
 # サービスアカウント
 resource "google_service_account" "cloud_run_sa" {
   account_id   = "${var.service_name}-sa"
@@ -83,6 +101,14 @@ resource "google_project_iam_member" "aiplatform_user" {
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 
   depends_on = [google_project_service.aiplatform_api]
+}
+
+# Artifact Registryへのアクセス権限
+resource "google_artifact_registry_repository_iam_member" "artifact_registry_reader" {
+  location   = google_artifact_registry_repository.main.location
+  repository = google_artifact_registry_repository.main.name
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
 # Cloud Runサービス
@@ -121,12 +147,24 @@ resource "google_cloud_run_v2_service" "main" {
         name  = "REGION"
         value = var.region
       }
+
+      # 任意: Vertex AI Vision設定（未指定なら空）
+      env {
+        name  = "VISION_ENDPOINT_ID"
+        value = var.vision_endpoint_id
+      }
+
+      env {
+        name  = "VISION_REGION"
+        value = var.vision_region != "" ? var.vision_region : var.region
+      }
     }
   }
 
   depends_on = [
     google_project_service.run_api,
-    google_project_service.aiplatform_api
+    google_project_service.aiplatform_api,
+    google_artifact_registry_repository.main
   ]
 }
 
