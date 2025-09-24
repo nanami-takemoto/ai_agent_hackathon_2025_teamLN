@@ -11,6 +11,16 @@ from config import Config
 # ブループリントを作成
 api = Blueprint('api', __name__)
 
+# すべての未捕捉例外をJSONで返す（HTTP 200）
+@api.errorhandler(Exception)
+def handle_api_error(e):
+    return jsonify({
+        "status": "error",
+        "message": "unhandled_exception",
+        "fallback_used": True,
+        "debug_error": str(e)
+    })
+
 # サービスインスタンス
 image_processor = ImageProcessor()
 storage_service = StorageService()
@@ -169,23 +179,37 @@ def mask_faces():
         
         # 画像をバイト形式に変換（顔検出用）
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=image.format)
+        fmt = image.format if image.format else 'PNG'
+        image.convert('RGB').save(img_byte_arr, format=fmt)
         image_bytes = img_byte_arr.getvalue()
         
         # 顔を検出
         face_regions = face_detector.get_face_regions(image_bytes)
         
-        # 顔が検出されない場合はエラー
+        # 顔が検出されない場合は200で情報返却（UI側のUXを優先）
         if not face_regions:
             return jsonify({
                 "status": "error",
                 "message": "顔が検出されませんでした",
                 "faces_detected": 0,
-                "image_info": image_processor.get_image_info(image)
-            }), 400
+                "image_info": image_processor.get_image_info(image),
+                "fallback_used": True,
+                "debug_error": "NO_FACES"
+            })
         
-        # Vertex AI Imagen APIを使用して花束を描画
-        edit_result = ai_image_editor.edit_image_with_ai(image, face_regions, "peace_sign")
+        # edit_typeパラメータを取得（1=花束、2=ポストカード）
+        edit_type_code = data.get('edit_type', 1)  # デフォルトは花束
+        
+        # edit_typeに応じて編集タイプを決定
+        if edit_type_code == 1:
+            edit_type = "bouquet"  # 花束
+        elif edit_type_code == 2:
+            edit_type = "postcard"  # ポストカード
+        else:
+            edit_type = "bouquet"  # デフォルトは花束
+        
+        # Vertex AI Imagen APIを使用して画像を編集
+        edit_result = ai_image_editor.edit_image_with_ai(image, face_regions, edit_type)
         masked_image = edit_result["image"]
         
         # 画像情報を取得
@@ -211,10 +235,13 @@ def mask_faces():
         return jsonify(response_json)
         
     except Exception as e:
+        # 500を返さず、UIが扱えるJSONで返す
         return jsonify({
             "status": "error",
-            "message": str(e)
-        }), 500
+            "message": "processing_failed",
+            "fallback_used": True,
+            "debug_error": str(e)
+        })
 
 @api.route('/mask-faces-from-storage', methods=['POST'])
 def mask_faces_from_storage():
@@ -234,7 +261,8 @@ def mask_faces_from_storage():
         
         # 画像をバイト形式に変換（顔検出用）
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=image.format)
+        fmt = image.format if image.format else 'PNG'
+        image.convert('RGB').save(img_byte_arr, format=fmt)
         image_bytes = img_byte_arr.getvalue()
         
         # 顔を検出
@@ -298,7 +326,8 @@ def ai_edit_image():
         
         # 画像をバイト形式に変換（顔検出用）
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=image.format)
+        fmt = image.format if image.format else 'PNG'
+        image.convert('RGB').save(img_byte_arr, format=fmt)
         image_bytes = img_byte_arr.getvalue()
         
         # 顔を検出

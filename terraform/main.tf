@@ -158,7 +158,33 @@ resource "google_cloud_run_v2_service" "main" {
         name  = "VISION_REGION"
         value = var.vision_region != "" ? var.vision_region : var.region
       }
+
+      # Imagen設定
+      env {
+        name  = "IMAGEN_REGION"
+        value = var.imagen_region
+      }
+
+      env {
+        name  = "IMAGEN_MODEL"
+        value = var.imagen_model
+      }
+
+      # SDXL設定
+      env {
+        name  = "SDXL_MODEL"
+        value = var.sdxl_model
+      }
+
+      env {
+        name  = "SDXL_REGION"
+        value = var.sdxl_region
+      }
     }
+
+    # 同時実行数 / タイムアウト
+    max_instance_request_concurrency = var.max_concurrency
+    timeout                          = var.request_timeout
   }
 
   depends_on = [

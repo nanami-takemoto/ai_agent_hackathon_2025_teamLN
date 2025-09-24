@@ -2,7 +2,6 @@
 variable "project_id" {
   description = "Google Cloud プロジェクトID"
   type        = string
-  default     = "gcp-zenn-hackathon-2025"
 }
 
 variable "region" {
@@ -33,20 +32,19 @@ variable "bucket_name" {
 variable "artifact_registry_repository_id" {
   description = "Artifact RegistryリポジトリID"
   type        = string
-  default     = "image-processor-repo"
 }
 
 # リソース設定
 variable "cpu_limit" {
   description = "Cloud RunサービスのCPU制限"
   type        = string
-  default     = "1"
+  default     = "2"
 }
 
 variable "memory_limit" {
   description = "Cloud Runサービスのメモリ制限"
   type        = string
-  default     = "1Gi"
+  default     = "2Gi"
 }
 
 variable "max_instances" {
@@ -55,9 +53,19 @@ variable "max_instances" {
   default     = 5
 }
 
+variable "max_concurrency" {
+  description = "1インスタンスあたりの同時処理数（リクエスト並列数）"
+  type        = number
+  default     = 1
+}
 
+variable "request_timeout" {
+  description = "リクエストタイムアウト（例: 120s）"
+  type        = string
+  default     = "120s"
+}
 
-# Vertex AI Vision（任意設定）
+# Vertex AI / Imagen 設定
 variable "vision_endpoint_id" {
   description = "Vertex AI Vision推論エンドポイントID（未指定なら検出スキップ）"
   type        = string
@@ -68,4 +76,28 @@ variable "vision_region" {
   description = "Vertex AI Visionのリージョン（未指定時はregionを使用）"
   type        = string
   default     = ""
+}
+
+variable "imagen_region" {
+  description = "Imagen/Generative Images のリージョン"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "imagen_model" {
+  description = "使用するImagenモデル名"
+  type        = string
+  default     = "imagen-3.0-generate-001"
+}
+
+variable "sdxl_model" {
+  description = "使用するSDXL Inpaintingモデル名"
+  type        = string
+  default     = "imagegeneration@006"
+}
+
+variable "sdxl_region" {
+  description = "SDXL Inpaintingのリージョン"
+  type        = string
+  default     = "us-central1"
 }

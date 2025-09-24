@@ -10,6 +10,10 @@ class Config:
     BUCKET_NAME = os.environ.get('BUCKET_NAME')
     # Imagen用リージョン（公開モデルはus-central1優先）
     IMAGEN_REGION = os.environ.get('IMAGEN_REGION', 'us-central1')
+    IMAGEN_MODEL = os.environ.get('IMAGEN_MODEL', 'imagen-3.0-generate-001')
+    # SDXL Inpainting設定
+    SDXL_MODEL = os.environ.get('SDXL_MODEL', 'imagegeneration@006')
+    SDXL_REGION = os.environ.get('SDXL_REGION', 'us-central1')
     # 任意: Vertex AI Vision 推論用エンドポイント設定（未指定なら検出はスキップ）
     VISION_ENDPOINT_ID = os.environ.get('VISION_ENDPOINT_ID')  # 例: 1234567890123456789
     VISION_REGION = os.environ.get('VISION_REGION', REGION)
@@ -21,6 +25,8 @@ class Config:
     # 画像処理設定
     MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
     ALLOWED_IMAGE_FORMATS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    RESIZE_LONG_SIDE = int(os.environ.get('RESIZE_LONG_SIDE', 1536))
+    JPEG_QUALITY = int(os.environ.get('JPEG_QUALITY', 92))
     
     # ストレージ設定
     PROCESSED_IMAGES_PREFIX = "processed_images/"

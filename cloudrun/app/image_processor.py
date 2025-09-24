@@ -22,20 +22,37 @@ class ImageProcessor:
         """画像の検証"""
         # 画像サイズの検証
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=image.format)
+        fmt = image.format if image.format else 'PNG'
+        image.save(img_byte_arr, format=fmt)
         
         if len(img_byte_arr.getvalue()) > Config.MAX_IMAGE_SIZE:
             raise Exception(f"画像サイズが大きすぎます。最大{Config.MAX_IMAGE_SIZE // (1024*1024)}MBまで")
         
         # 画像形式の検証
-        if image.format.lower() not in [fmt[1:] for fmt in Config.ALLOWED_IMAGE_FORMATS]:
+        if image.format and image.format.lower() not in [fmt[1:] for fmt in Config.ALLOWED_IMAGE_FORMATS]:
             raise Exception(f"サポートされていない画像形式です: {image.format}")
     
     @staticmethod
+    def downscale_if_needed(image: Image.Image) -> Image.Image:
+        """長辺が設定値を超える場合に縮小。"""
+        try:
+            width, height = image.size
+            long_side = max(width, height)
+            target = Config.RESIZE_LONG_SIDE
+            if long_side <= target:
+                return image
+            scale = target / float(long_side)
+            new_size = (int(width * scale), int(height * scale))
+            # RGB化して高品質リサンプリング
+            img_rgb = image.convert('RGB') if image.mode != 'RGB' else image
+            return img_rgb.resize(new_size, Image.Resampling.LANCZOS)
+        except Exception:
+            return image
+    
+    @staticmethod
     def process_image(image: Image.Image) -> Image.Image:
-        """画像の基本処理（現在はそのまま返す）"""
-        # 将来的にここで画像の変換、フィルタリング、リサイズなどを実装
-        return image
+        """画像の基本処理（リサイズ適用）"""
+        return ImageProcessor.downscale_if_needed(image)
     
     @staticmethod
     def get_image_info(image: Image.Image, source_blob: Optional[str] = None) -> Dict:

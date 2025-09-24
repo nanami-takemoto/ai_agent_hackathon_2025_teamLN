@@ -12,10 +12,15 @@ export REGION="asia-northeast1"
 gcloud auth configure-docker asia-northeast1-docker.pkg.dev
 cd cloudrun
 
-docker build --platform linux/amd64 -f docker/Dockerfile \
-  -t asia-northeast1-docker.pkg.dev/ai-agent-hackathon-2025-teamln/image-processor-repo/image-processor:latest .
+export REGION="asia-northeast1"
+export REPO="<your-repo>"         # 例: image-processor-repo
+export IMAGE="<your-image>"       # 例: image-processor
+export PROJECT_ID="<your-project>"
 
-docker push asia-northeast1-docker.pkg.dev/ai-agent-hackathon-2025-teamln/image-processor-repo/image-processor:latest
+docker build --platform linux/amd64 -f docker/Dockerfile \
+  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:latest .
+
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:latest
 ```
 
 ## Terraform（インフラ構築）
@@ -32,8 +37,8 @@ terraform apply tfplan
 ## Cloud Run 更新
 ```
 gcloud run deploy image-processor \
-  --image=asia-northeast1-docker.pkg.dev/ai-agent-hackathon-2025-teamln/image-processor-repo/image-processor:latest \
-  --region=asia-northeast1 --platform=managed --allow-unauthenticated \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:latest \
+  --region=${REGION} --platform=managed --allow-unauthenticated \
   --memory=1Gi --cpu=1 --max-instances=5
 ```
 

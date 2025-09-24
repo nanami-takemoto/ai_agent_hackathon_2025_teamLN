@@ -7,23 +7,26 @@ const fileInput = document.getElementById('fileInput');
 const dropzone = document.getElementById('dropzone');
 const inputPreview = document.getElementById('inputPreview');
 const outputPreview = document.getElementById('outputPreview');
-const maskFacesBtn = document.getElementById('maskFacesBtn');
+  const maskFacesBtn = document.getElementById('maskFacesBtn');
+  const maskFacesPostcardBtn = document.getElementById('maskFacesPostcardBtn');
 const aiEditBtn = null; // 統合のため未使用
 // 結果表示要素は削除
 
 let selectedFile = null;
 
-function setBusy(isBusy) {
-  [maskFacesBtn].forEach((btn) => (btn.disabled = isBusy || !selectedFile));
-  if (isBusy) {
-    maskFacesBtn.textContent = '処理中...';
-  } else {
-    maskFacesBtn.textContent = '匿名化（花束）';
+  function setBusy(isBusy) {
+    [maskFacesBtn, maskFacesPostcardBtn].forEach((btn) => (btn.disabled = isBusy || !selectedFile));
+    if (isBusy) {
+      maskFacesBtn.textContent = '処理中...';
+      maskFacesPostcardBtn.textContent = '処理中...';
+    } else {
+      maskFacesBtn.textContent = '匿名化（花束）';
+      maskFacesPostcardBtn.textContent = '匿名化（ポストカード）';
+    }
   }
-}
 
 function enableActions() {
-  [maskFacesBtn].forEach((btn) => (btn.disabled = !selectedFile));
+  [maskFacesBtn, maskFacesPostcardBtn].forEach((btn) => (btn.disabled = !selectedFile));
 }
 
 function toBase64(file) {
@@ -32,10 +35,34 @@ function toBase64(file) {
   if (!allowed.includes(file.type)) {
     throw new Error('対応していない形式です。pngまたはjpg/jpegのみアップロードできます。');
   }
+  const MAX_LONG_SIDE = 1600; // 事前縮小（ネットワークとサーバ負荷軽減）
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const longSide = Math.max(width, height);
+        let targetW = width;
+        let targetH = height;
+        if (longSide > MAX_LONG_SIDE) {
+          const scale = MAX_LONG_SIDE / longSide;
+          targetW = Math.round(width * scale);
+          targetH = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mime, 0.92);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
@@ -66,6 +93,7 @@ async function handleMaskFaces() {
     const data = await callApi('/mask-faces', {
       image: base64,
       filename: selectedFile.name || 'uploaded_image',
+      edit_type: 1, // 花束
     });
     // 出力プレビューはData URLを優先
     if (data.data_url) {
@@ -79,6 +107,31 @@ async function handleMaskFaces() {
     setBusy(false);
   }
 }
+
+async function handleMaskFacesPostcard() {
+  if (!selectedFile) return;
+  try {
+    setBusy(true);
+    const base64 = await toBase64(selectedFile);
+    const data = await callApi('/mask-faces', {
+      image: base64,
+      filename: selectedFile.name || 'uploaded_image',
+      edit_type: 2, // ポストカード
+    });
+    // 出力プレビューはData URLを優先
+    if (data.data_url) {
+      outputPreview.src = data.data_url;
+    } else if (data.signed_url) {
+      outputPreview.src = data.signed_url;
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    setBusy(false);
+  }
+}
+
+// 背景変更機能は削除済み
 
 
 // ドラッグ&ドロップ
@@ -114,6 +167,8 @@ fileInput.addEventListener('change', (e) => {
 });
 
 maskFacesBtn.addEventListener('click', handleMaskFaces);
+maskFacesPostcardBtn.addEventListener('click', handleMaskFacesPostcard);
+// 背景変更機能は削除済み
 // 統合のためAI編集ボタンは廃止
 
 

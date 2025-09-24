@@ -13,6 +13,18 @@ def create_app():
     # ブループリントを登録（/api配下にマウント）
     app.register_blueprint(api, url_prefix='/api')
 
+    # グローバル例外ハンドラ（未捕捉例外でも200でJSONを返す）
+    @app.errorhandler(Exception)
+    def handle_unhandled_error(e):
+        import traceback
+        from flask import jsonify
+        return jsonify({
+            "status": "error",
+            "message": "unhandled_exception",
+            "fallback_used": True,
+            "debug_error": f"{str(e)} | traceback={traceback.format_exc(limit=5)}"
+        })
+
     # フロントエンド: ルートページ
     @app.route('/home')
     @app.route('/')
